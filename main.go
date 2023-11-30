@@ -116,9 +116,9 @@ Optional flags:
 
 `
 
-func printASCIIArt() {
-	binverLogo := aec.CyanF.Apply(figletStr)
-	fmt.Println(binverLogo)
+func printLogo() {
+	logo := aec.CyanF.Apply(figletStr)
+	fmt.Println(logo)
 }
 
 func usage() {
@@ -135,7 +135,7 @@ func main() {
 	flag.Parse()
 
 	if *displayVersion {
-		printASCIIArt()
+		printLogo()
 		fmt.Printf("barcodescanner v%s (%s)\n", version, buildTime)
 		os.Exit(0)
 	}
