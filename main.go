@@ -17,6 +17,7 @@ import (
 
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/oned"
+	"github.com/morikuni/aec"
 	"github.com/nfnt/resize"
 	"hawx.me/code/img/greyscale"
 )
@@ -91,6 +92,13 @@ func processFile(fileName string) *BarcodeResult {
 	return output
 }
 
+const figletStr = `
+  _                     _                                 
+ | |_ ___ ___ ___ ___ _| |___ ___ ___ ___ ___ ___ ___ ___ 
+ | . | .'|  _|  _| . | . | -_|_ -|  _| .'|   |   | -_|  _|
+ |___|__,|_| |___|___|___|___|___|___|__,|_|_|_|_|___|_|  											  										   
+`
+
 const usageStr = `Usage of barcodescanner:
 barcodescanner [flags] file...
 
@@ -108,6 +116,11 @@ Optional flags:
 
 `
 
+func printASCIIArt() {
+	binverLogo := aec.CyanF.Apply(figletStr)
+	fmt.Println(binverLogo)
+}
+
 func usage() {
 	fmt.Fprint(os.Stderr, usageStr)
 	os.Exit(2)
@@ -122,6 +135,7 @@ func main() {
 	flag.Parse()
 
 	if *displayVersion {
+		printASCIIArt()
 		fmt.Printf("barcodescanner v%s (%s)\n", version, buildTime)
 		os.Exit(0)
 	}
