@@ -19,3 +19,23 @@ If you want to build binaries use the Makefile and then run the executable.
 ```
 ./build/barcodescanner.darwin.arm64 yourimagefile.jpg
 ```
+
+
+## Usage
+```
+Usage of barcodescanner:
+barcodescanner [flags] file...
+
+This tool scans for barcodes (EAN-13 and UPC-A) in the specified files.
+The argument file... is one or more image files to scan. Supported image formats
+are: bmp, gif, jpeg, png, tiff, webp.
+
+Optional flags:
+  --pretty
+                Pretty-print the json output
+  --version
+                Display version
+  -h, --help
+                Display this help
+
+```
