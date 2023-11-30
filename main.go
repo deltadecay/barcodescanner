@@ -139,7 +139,6 @@ func main() {
 		fmt.Printf("barcodescanner v%s (%s)\n", version, buildTime)
 		os.Exit(0)
 	}
-	//args := os.Args[1:]
 	args := flag.Args()
 
 	if len(args) > MaxNumArgs {
@@ -147,10 +146,8 @@ func main() {
 	}
 
 	processedFiles := make([]*BarcodeResult, len(args))
-	for index, arg := range args {
-		fileName := arg
-		result := processFile(fileName)
-		processedFiles[index] = result
+	for index, fileName := range args {
+		processedFiles[index] = processFile(fileName)
 	}
 	scannedFiles := ScannedBarcodes{Barcodes: processedFiles}
 
