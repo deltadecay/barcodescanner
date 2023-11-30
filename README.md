@@ -11,12 +11,12 @@ To build it requires go. It has been tested with go 1.21. Perform **go mod tidy*
 ## Run and build
 
 You can run without building a binary
-```
+```sh
 go run main.go yourimagefile.jpg
 ```
 
 If you want to build binaries use the Makefile and then run the executable. 
-```
+```sh
 ./build/barcodescanner.darwin.arm64 yourimagefile.jpg
 ```
 
@@ -38,4 +38,28 @@ Optional flags:
   -h, --help
                 Display this help
 
+```
+
+
+## Example
+
+```sh
+./barcodescanner.darwin.arm64 --pretty upc1.jpg dvd1_back.jpg
+```
+Scanning two images, one with a barcode and one where it cannot be detected generates this json:
+```json
+{
+   "barcodes": [
+      {
+         "file": "upc1.jpg",
+         "format": "UPC_A",
+         "data": "883929215768",
+         "country": "US/CA"
+      },
+      {
+         "file": "dvd1_back.jpg",
+         "error": "NotFoundException"
+      }
+   ]
+}
 ```
