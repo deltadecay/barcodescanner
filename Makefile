@@ -1,6 +1,6 @@
 #git_hash := $(shell git rev-parse --short HEAD || echo 'development')
 #version = ${git_hash}
-version = 0.1.1
+version = 0.1.2
 
 # Get current date time in UTC
 current_time = $(shell date -u +"%Y-%m-%dT%H:%M:%S%Z")
