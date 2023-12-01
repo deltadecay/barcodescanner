@@ -9,7 +9,10 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
+	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
@@ -19,7 +22,9 @@ import (
 	"github.com/makiuchi-d/gozxing/oned"
 	"github.com/morikuni/aec"
 	"github.com/nfnt/resize"
+	"hawx.me/code/img/contrast"
 	"hawx.me/code/img/greyscale"
+	"hawx.me/code/img/sharpen"
 )
 
 var (
@@ -36,10 +41,14 @@ type BarcodeResult struct {
 }
 
 type ScannedBarcodes struct {
-	Barcodes []*BarcodeResult `json:"barcodes"`
+	Barcodes  []*BarcodeResult `json:"barcodes"`
+	Grey      bool             `json:"grey"`
+	Scale     float64          `json:"scale"`
+	Contrast  float64          `json:"contrast"`
+	Unsharpen string           `json:"unsharpen,omitempty"`
 }
 
-func processFile(fileName string) *BarcodeResult {
+func processFile(fileName string, grey bool, scaleFactor float64, unsharpen []float64, contrastFactor float64) *BarcodeResult {
 	output := &BarcodeResult{
 		FileName: fileName,
 	}
@@ -57,13 +66,26 @@ func processFile(fileName string) *BarcodeResult {
 		return output
 	}
 
-	img = greyscale.Greyscale(img)
-	//img = sharpen.UnsharpMask(img, 4, 1.0, 1.0, 0.05)
-	//img = contrast.Linear(img, 1.5)
-
+	if grey {
+		img = greyscale.Greyscale(img)
+	}
 	width := uint(img.Bounds().Max.X - img.Bounds().Min.X)
-	img = resize.Resize(width*2, 0, img, resize.Lanczos3)
-
+	if scaleFactor != 1.0 {
+		newWidth := uint(math.Round(float64(width) * scaleFactor))
+		if newWidth != width {
+			img = resize.Resize(newWidth, 0, img, resize.Lanczos3)
+		}
+	}
+	if len(unsharpen) == 4 {
+		radius := int(unsharpen[0])
+		sigma := unsharpen[1]
+		amount := unsharpen[2]
+		threshold := unsharpen[3]
+		img = sharpen.UnsharpMask(img, radius, sigma, amount, threshold)
+	}
+	if contrastFactor != 1.0 {
+		img = contrast.Linear(img, contrastFactor)
+	}
 	bmp, _ := gozxing.NewBinaryBitmapFromImage(img)
 
 	hints := map[gozxing.DecodeHintType]interface{}{
@@ -107,6 +129,14 @@ The argument file... is one or more image files to scan. Supported image formats
 are: bmp, gif, jpeg, png, tiff, webp.
 
 Optional flags:
+  --grey
+  		Convert image to greyscale. Applied first.
+  --scale
+  		Factor to resize the image with. Default 1.0 has no effect. Applied second.
+  --unsharpen
+  		Apply unsharp mask. Four params comma separated: radius, sigma, amount, threshold. Applied third.
+  --contrast
+  		Factor to adjust the contrast. Default 1.0 has no effect. Applied last.
   --pretty	
 		Pretty-print the json output
   --version
@@ -130,6 +160,10 @@ const MaxNumArgs = 100
 
 func main() {
 	flag.Usage = usage
+	grey := flag.Bool("grey", false, "Convert image to greyscale.")
+	scaleFactor := flag.Float64("scale", 1.0, "Factor to resize the image with. Default 1.0 has no effect.")
+	contrastFactor := flag.Float64("contrast", 1.0, "Factor to adjust the contrast. Default 1.0 has no effect.")
+	unsharpenStr := flag.String("unsharpen", "", "Apply unsharp mask. Four params comma separated: radius, sigma, amount, threshold.")
 	prettyJson := flag.Bool("pretty", false, "Pretty-print the json output")
 	displayVersion := flag.Bool("version", false, "Display version")
 	flag.Parse()
@@ -145,20 +179,41 @@ func main() {
 		args = args[0:MaxNumArgs]
 	}
 
+	var unsharpen []float64
+	unsharpenStrFix := *unsharpenStr
+	unsharpenStrFix = strings.Trim(unsharpenStrFix, "'\"")
+	unsharpenParams := strings.Split(unsharpenStrFix, ",")
+	if len(unsharpenParams) == 4 {
+		unsharpen = []float64{3, 1.0, 1.0, 0.05}
+		for index, param := range unsharpenParams {
+			param = strings.TrimSpace(param)
+			val, err := strconv.ParseFloat(param, 64)
+			if err == nil {
+				unsharpen[index] = val
+			}
+		}
+	}
+
 	processedFiles := make([]*BarcodeResult, len(args))
 	for index, fileName := range args {
-		processedFiles[index] = processFile(fileName)
+		processedFiles[index] = processFile(fileName, *grey, *scaleFactor, unsharpen, *contrastFactor)
 	}
-	scannedFiles := ScannedBarcodes{Barcodes: processedFiles}
+	result := ScannedBarcodes{
+		Barcodes:  processedFiles,
+		Grey:      *grey,
+		Scale:     *scaleFactor,
+		Contrast:  *contrastFactor,
+		Unsharpen: *unsharpenStr,
+	}
 
 	var (
 		bytes []byte
 		err   error
 	)
 	if *prettyJson {
-		bytes, err = json.MarshalIndent(scannedFiles, "", "   ")
+		bytes, err = json.MarshalIndent(result, "", "   ")
 	} else {
-		bytes, err = json.Marshal(scannedFiles)
+		bytes, err = json.Marshal(result)
 	}
 
 	if err != nil {
