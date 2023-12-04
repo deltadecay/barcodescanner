@@ -9,7 +9,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -21,10 +20,6 @@ import (
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/oned"
 	"github.com/morikuni/aec"
-	"github.com/nfnt/resize"
-	"hawx.me/code/img/contrast"
-	"hawx.me/code/img/greyscale"
-	"hawx.me/code/img/sharpen"
 )
 
 var (
@@ -48,7 +43,42 @@ type ScannedBarcodes struct {
 	Unsharpen string           `json:"unsharpen,omitempty"`
 }
 
-func processFile(fileName string, grey bool, scaleFactor float64, unsharpen []float64, contrastFactor float64) *BarcodeResult {
+func createPreProcessOps(grey bool, scaleFactor float64, unsharpenStr string, contrastFactor float64) []PreProcessOp {
+	preProcessOps := make([]PreProcessOp, 0)
+	if grey {
+		preProcessOps = append(preProcessOps, &GreyScaleOp{})
+	}
+	if scaleFactor != 1.0 {
+		preProcessOps = append(preProcessOps, &ResizeOp{Scale: scaleFactor})
+	}
+
+	var unsharpen []float64
+	unsharpenStrFix := unsharpenStr
+	unsharpenStrFix = strings.Trim(unsharpenStrFix, "'\"")
+	unsharpenParams := strings.Split(unsharpenStrFix, ",")
+	if len(unsharpenParams) == 4 {
+		unsharpen = []float64{3, 1.0, 1.0, 0.05}
+		for index, param := range unsharpenParams {
+			param = strings.TrimSpace(param)
+			val, err := strconv.ParseFloat(param, 64)
+			if err == nil {
+				unsharpen[index] = val
+			}
+		}
+		preProcessOps = append(preProcessOps, &UnsharpenOp{
+			Radius:    int(unsharpen[0]),
+			Sigma:     unsharpen[1],
+			Amount:    unsharpen[2],
+			Threshold: unsharpen[3],
+		})
+	}
+	if contrastFactor != 1.0 {
+		preProcessOps = append(preProcessOps, &ConstrastOp{Factor: contrastFactor})
+	}
+	return preProcessOps
+}
+
+func processFile(fileName string, preProcessOps []PreProcessOp) *BarcodeResult {
 	output := &BarcodeResult{
 		FileName: fileName,
 	}
@@ -66,26 +96,10 @@ func processFile(fileName string, grey bool, scaleFactor float64, unsharpen []fl
 		return output
 	}
 
-	if grey {
-		img = greyscale.Greyscale(img)
+	for _, op := range preProcessOps {
+		img = op.Apply(img)
 	}
-	width := uint(img.Bounds().Max.X - img.Bounds().Min.X)
-	if scaleFactor != 1.0 {
-		newWidth := uint(math.Round(float64(width) * scaleFactor))
-		if newWidth != width {
-			img = resize.Resize(newWidth, 0, img, resize.Lanczos3)
-		}
-	}
-	if len(unsharpen) == 4 {
-		radius := int(unsharpen[0])
-		sigma := unsharpen[1]
-		amount := unsharpen[2]
-		threshold := unsharpen[3]
-		img = sharpen.UnsharpMask(img, radius, sigma, amount, threshold)
-	}
-	if contrastFactor != 1.0 {
-		img = contrast.Linear(img, contrastFactor)
-	}
+
 	bmp, _ := gozxing.NewBinaryBitmapFromImage(img)
 
 	hints := map[gozxing.DecodeHintType]interface{}{
@@ -179,24 +193,11 @@ func main() {
 		args = args[0:MaxNumArgs]
 	}
 
-	var unsharpen []float64
-	unsharpenStrFix := *unsharpenStr
-	unsharpenStrFix = strings.Trim(unsharpenStrFix, "'\"")
-	unsharpenParams := strings.Split(unsharpenStrFix, ",")
-	if len(unsharpenParams) == 4 {
-		unsharpen = []float64{3, 1.0, 1.0, 0.05}
-		for index, param := range unsharpenParams {
-			param = strings.TrimSpace(param)
-			val, err := strconv.ParseFloat(param, 64)
-			if err == nil {
-				unsharpen[index] = val
-			}
-		}
-	}
+	preProcessOps := createPreProcessOps(*grey, *scaleFactor, *unsharpenStr, *contrastFactor)
 
 	processedFiles := make([]*BarcodeResult, len(args))
 	for index, fileName := range args {
-		processedFiles[index] = processFile(fileName, *grey, *scaleFactor, unsharpen, *contrastFactor)
+		processedFiles[index] = processFile(fileName, preProcessOps)
 	}
 	result := ScannedBarcodes{
 		Barcodes:  processedFiles,

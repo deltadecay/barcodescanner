@@ -11,7 +11,7 @@ To build it requires go. It has been tested with go 1.21. Perform **go mod tidy*
 
 You can run without building a binary
 ```sh
-go run main.go yourimagefile.jpg
+go run . yourimagefile.jpg
 ```
 
 If you want to build binaries use the Makefile and then run the executable. 
