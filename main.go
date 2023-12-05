@@ -46,10 +46,10 @@ type ScannedBarcodes struct {
 func createPreProcessOps(grey bool, scaleFactor float64, unsharpenStr string, contrastFactor float64) []PreProcessOp {
 	preProcessOps := make([]PreProcessOp, 0)
 	if grey {
-		preProcessOps = append(preProcessOps, &GreyScaleOp{})
+		preProcessOps = append(preProcessOps, NewGreyScaleOp())
 	}
 	if scaleFactor != 1.0 {
-		preProcessOps = append(preProcessOps, &ResizeOp{Scale: scaleFactor})
+		preProcessOps = append(preProcessOps, NewResizeOp(scaleFactor))
 	}
 
 	var unsharpen []float64
@@ -65,15 +65,10 @@ func createPreProcessOps(grey bool, scaleFactor float64, unsharpenStr string, co
 				unsharpen[index] = val
 			}
 		}
-		preProcessOps = append(preProcessOps, &UnsharpenOp{
-			Radius:    int(unsharpen[0]),
-			Sigma:     unsharpen[1],
-			Amount:    unsharpen[2],
-			Threshold: unsharpen[3],
-		})
+		preProcessOps = append(preProcessOps, NewUnsharpenOp(int(unsharpen[0]), unsharpen[1], unsharpen[2], unsharpen[3]))
 	}
 	if contrastFactor != 1.0 {
-		preProcessOps = append(preProcessOps, &ConstrastOp{Factor: contrastFactor})
+		preProcessOps = append(preProcessOps, NewContrastOp(contrastFactor))
 	}
 	return preProcessOps
 }
