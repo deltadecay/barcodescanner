@@ -1,4 +1,4 @@
-[Build](https://github.com/deltadecay/barcodescanner/actions/workflows/go.yml/badge.svg)
+![Build](https://github.com/deltadecay/barcodescanner/actions/workflows/go.yml/badge.svg)
 
 # A simple barcode scanner 
 
