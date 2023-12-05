@@ -1,3 +1,5 @@
+[Build](https://github.com/deltadecay/barcodescanner/actions/workflows/go.yml/badge.svg)
+
 # A simple barcode scanner 
 
 This command line tool reads images (bmp, gif, jpeg, png, tiff, webp) from the command line and outputs a json result with information whether a barcode was found or if there were errors.
