@@ -92,6 +92,6 @@ func TestNewUnsharpenOpFromString(t *testing.T) {
 func TestNewContrastOp(t *testing.T) {
 	contrastOp := NewContrastOp(1.5)
 	if !withinTolerance(contrastOp.Factor, 1.5, 1e-12) {
-		t.Errorf("contrastOp.Factor = %f; want 1.6", contrastOp.Factor)
+		t.Errorf("contrastOp.Factor = %f; want 1.5", contrastOp.Factor)
 	}
 }
