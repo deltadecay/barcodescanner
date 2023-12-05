@@ -10,8 +10,6 @@ import (
 	_ "image/png"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
@@ -51,21 +49,8 @@ func createPreProcessOps(grey bool, scaleFactor float64, unsharpenStr string, co
 	if scaleFactor != 1.0 {
 		preProcessOps = append(preProcessOps, NewResizeOp(scaleFactor))
 	}
-
-	var unsharpen []float64
-	unsharpenStrFix := unsharpenStr
-	unsharpenStrFix = strings.Trim(unsharpenStrFix, "'\"")
-	unsharpenParams := strings.Split(unsharpenStrFix, ",")
-	if len(unsharpenParams) == 4 {
-		unsharpen = []float64{3, 1.0, 1.0, 0.05}
-		for index, param := range unsharpenParams {
-			param = strings.TrimSpace(param)
-			val, err := strconv.ParseFloat(param, 64)
-			if err == nil {
-				unsharpen[index] = val
-			}
-		}
-		preProcessOps = append(preProcessOps, NewUnsharpenOp(int(unsharpen[0]), unsharpen[1], unsharpen[2], unsharpen[3]))
+	if len(unsharpenStr) > 0 {
+		preProcessOps = append(preProcessOps, NewUnsharpenOpFromString(unsharpenStr))
 	}
 	if contrastFactor != 1.0 {
 		preProcessOps = append(preProcessOps, NewContrastOp(contrastFactor))

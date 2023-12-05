@@ -21,5 +21,7 @@ package: build
 	tar --directory build -czvf ./build/barcodescanner-${version}.darwin.arm64.tar.gz barcodescanner.darwin.arm64
 	tar --directory build -czvf ./build/barcodescanner-${version}.linux.amd64.tar.gz barcodescanner.linux.amd64
 
+test:
+	go test -v
 
-.PHONY: build clean package
+.PHONY: build clean package test
